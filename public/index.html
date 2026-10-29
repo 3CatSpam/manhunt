@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1116">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Manhunt">
+  <title>Manhunt</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Accueil -->
+  <section id="home" class="screen scroll">
+    <div class="hero">
+      <img src="/icons/icon-192.png" alt="" width="84" height="84">
+      <h1>Manhunt</h1>
+      <p>La chasse à l'homme grandeur nature</p>
+    </div>
+
+    <form id="home-form" class="card" autocomplete="off">
+      <label class="field">
+        <span>Votre pseudo</span>
+        <input id="name" maxlength="20" autocomplete="nickname" placeholder="Ex : Léa" required>
+      </label>
+      <button class="btn primary" type="submit" id="btn-create">Créer une partie</button>
+      <div class="or"><span>ou</span></div>
+      <label class="field">
+        <span>Code de la partie</span>
+        <input id="code" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="ABCD" class="code-input">
+      </label>
+      <button class="btn" type="button" id="btn-join">Rejoindre</button>
+    </form>
+
+    <div id="ios-hint" class="card hint-card" hidden>
+      Sur iPhone : touchez <b>Partager</b> puis <b>Sur l'écran d'accueil</b> pour installer l'appli.
+    </div>
+
+    <details class="card rules">
+      <summary>Règles du jeu</summary>
+      <ul>
+        <li>Les joueurs sont répartis au hasard en <b>hiders</b> et <b>hunters</b> (moitié-moitié).</li>
+        <li>Les hiders partent se cacher : les hunters attendent la fin de l'<b>avance</b> (10 min par défaut).</li>
+        <li>Ensuite, la position de chaque hider est <b>pingée toutes les 5 minutes</b> : les hunters voient le dernier ping sur la carte.</li>
+        <li>Restez dans la zone de jeu. Un hider attrapé le signale dans l'appli.</li>
+        <li>La manche finit quand tous les hiders sont attrapés. Puis les rôles s'inversent.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- Salon -->
+  <section id="lobby" class="screen scroll" hidden>
+    <header class="bar">
+      <button class="icon-btn" id="btn-leave" aria-label="Quitter le salon">←</button>
+      <h2>Salon</h2>
+      <span class="chip ghost" id="round-label"></span>
+    </header>
+
+    <div class="card codecard">
+      <div>
+        <small>Code de la partie</small>
+        <div class="code" id="lobby-code"></div>
+      </div>
+      <button class="btn small" id="btn-share">Inviter</button>
+    </div>
+
+    <div class="card">
+      <h3>Joueurs <span class="muted" id="player-count"></span></h3>
+      <ul class="players" id="player-list"></ul>
+      <p class="hint" id="roles-hint"></p>
+    </div>
+
+    <div class="card">
+      <h3>Zone de jeu</h3>
+      <div class="city" id="city-name"></div>
+      <div id="host-search">
+        <form class="row" id="city-form">
+          <input id="city-q" type="search" placeholder="Rechercher une ville" autocomplete="off" enterkeyhint="search">
+          <button class="btn small" type="submit">Chercher</button>
+        </form>
+        <ul class="results" id="city-results"></ul>
+        <button class="btn small ghost" type="button" id="btn-use-pos">📍 Utiliser ma position</button>
+      </div>
+      <div id="lobby-map" class="map-preview"></div>
+      <label class="range">
+        <span>Rayon de la zone <b id="radius-val"></b></span>
+        <input id="radius" type="range" min="0.2" max="25" step="0.1">
+      </label>
+      <p class="hint" id="map-hint">Touchez la carte pour déplacer le centre de la zone.</p>
+    </div>
+
+    <div class="card">
+      <h3>Règles de la manche</h3>
+      <label class="field inline">
+        <span>Avance des hiders</span>
+        <select id="set-head">
+          <option value="0">Aucune</option>
+          <option value="5">5 min</option>
+          <option value="10">10 min</option>
+          <option value="15">15 min</option>
+          <option value="20">20 min</option>
+          <option value="30">30 min</option>
+        </select>
+      </label>
+      <label class="field inline">
+        <span>Ping de position toutes les</span>
+        <select id="set-ping">
+          <option value="1">1 min</option>
+          <option value="2">2 min</option>
+          <option value="3">3 min</option>
+          <option value="5">5 min</option>
+          <option value="10">10 min</option>
+          <option value="15">15 min</option>
+        </select>
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="set-see">
+        <span class="track"></span>
+        <span class="label">Les hiders voient les derniers pings des autres hiders</span>
+      </label>
+    </div>
+
+    <div class="card" id="geo-card">
+      <h3>Localisation</h3>
+      <p class="hint" id="geo-status"></p>
+      <button class="btn small" id="btn-geo">Activer la localisation</button>
+    </div>
+
+    <footer class="dock">
+      <button class="btn primary big" id="btn-start">Lancer la partie</button>
+      <p class="hint center" id="start-hint"></p>
+    </footer>
+  </section>
+
+  <!-- Partie -->
+  <section id="game" class="screen" hidden>
+    <div id="game-map"></div>
+
+    <div class="hud top">
+      <div class="chips">
+        <span class="chip" id="role-chip"></span>
+        <span class="chip ghost" id="round-chip"></span>
+      </div>
+      <div class="hud-title" id="phase-title"></div>
+      <div class="hud-time" id="phase-time"></div>
+      <div class="hud-sub" id="phase-sub"></div>
+    </div>
+
+    <div class="warn" id="warn" hidden></div>
+
+    <div class="fabs">
+      <button class="fab" id="btn-me" aria-label="Centrer sur ma position">◎</button>
+      <button class="fab" id="btn-zone" aria-label="Voir toute la zone">⛶</button>
+    </div>
+
+    <div class="sheet collapsed" id="sheet">
+      <button class="handle" id="sheet-handle" aria-label="Afficher les joueurs"><span></span></button>
+      <div class="sheet-body">
+        <div class="sheet-summary" id="sheet-summary"></div>
+        <ul class="players" id="game-players"></ul>
+        <button class="btn danger" id="btn-caught">Je me suis fait attraper</button>
+        <button class="btn ghost" id="btn-end">Terminer la partie</button>
+        <button class="btn ghost" id="btn-leave-game">Quitter la partie</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="result" hidden>
+      <div class="card result-card">
+        <div class="result-emoji" id="result-emoji"></div>
+        <h2 id="result-title"></h2>
+        <p class="muted" id="result-sub"></p>
+        <ol class="ranking" id="result-list"></ol>
+        <button class="btn primary" id="btn-next">Manche suivante · rôles inversés</button>
+        <p class="hint center" id="next-hint"></p>
+        <button class="btn ghost" id="btn-map">Voir la carte</button>
+        <button class="btn ghost" id="btn-quit">Quitter</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

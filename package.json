@@ -1,0 +1,19 @@
+{
+  "name": "manhunt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Manhunt : chasse à l'homme grandeur nature (PWA)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/",
+    "icons": "node scripts/make-icons.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}
