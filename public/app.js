@@ -207,7 +207,8 @@
   // Le serveur ne garde que la dernière position et ne la diffuse qu'aux échéances de ping.
   // Les hunters n'ont pas besoin d'envoyer la leur.
   function pushPosition(force) {
-    if (!geo.pos || !state || myPlayer()?.role === 'hunter') return;
+    const me = myPlayer();
+    if (!geo.pos || !state || me?.role === 'hunter' || me?.caught) return;
     const t = Date.now();
     if (!force && t - geo.lastSent < 8000) return;
     geo.lastSent = t;
@@ -384,7 +385,12 @@
       $('radius-val').textContent = `${(s.radius / 1000).toFixed(1).replace('.', ',')} km`;
     }
 
-    for (const [id, v] of [['set-head', s.headStartMin], ['set-ping', s.pingEveryMin]]) {
+    for (const [id, v] of [
+      ['set-head', s.headStartMin],
+      ['set-ping', s.pingEveryMin],
+      ['set-duration', s.durationMin],
+      ['set-caught', s.caughtDisplay],
+    ]) {
       const el = $(id);
       el.disabled = !host;
       if (document.activeElement !== el) el.value = String(v);
@@ -446,6 +452,12 @@
   );
   $('set-ping').addEventListener('change', (e) =>
     send({ type: 'settings', patch: { pingEveryMin: Number(e.target.value) } })
+  );
+  $('set-duration').addEventListener('change', (e) =>
+    send({ type: 'settings', patch: { durationMin: Number(e.target.value) } })
+  );
+  $('set-caught').addEventListener('change', (e) =>
+    send({ type: 'settings', patch: { caughtDisplay: e.target.value } })
   );
   $('set-see').addEventListener('change', (e) =>
     send({ type: 'settings', patch: { hidersSeeHiders: e.target.checked } })
@@ -537,6 +549,7 @@
   let meAcc = null;
   let fittedRound = 0;
   const pins = new Map(); // id -> { marker, em, ping }
+  const crosses = new Map(); // id -> marker
 
   function ensureGameMap() {
     if (gmap) return;
@@ -643,6 +656,34 @@
       }
     }
     updateAges();
+    syncCrosses();
+  }
+
+  // Croix à l'endroit où un hider a été attrapé (si le réglage du salon l'autorise).
+  function syncCrosses() {
+    const keep = new Set();
+    for (const c of state.catches) {
+      const p = state.players.find((x) => x.id === c.id);
+      if (!p) continue;
+      keep.add(c.id);
+      let m = crosses.get(c.id);
+      if (!m) {
+        const root = h('div', { class: 'cross' }, h('b', {}, '✕'), h('span', {}, p.name));
+        m = L.marker([c.lat, c.lng], {
+          icon: L.divIcon({ className: 'pin-wrap', html: root, iconSize: [0, 0] }),
+          interactive: false,
+          keyboard: false,
+        }).addTo(gmap);
+        crosses.set(c.id, m);
+      }
+      m.setLatLng([c.lat, c.lng]);
+    }
+    for (const [id, m] of crosses) {
+      if (!keep.has(id)) {
+        m.remove();
+        crosses.delete(id);
+      }
+    }
   }
 
   function updateAges() {
@@ -717,7 +758,9 @@
     $('result-title').textContent = won ? 'Victoire !' : 'Défaite';
     $('result-sub').textContent = st.allCaught
       ? `Les hunters ont attrapé tous les hiders en ${fmt(Math.max(0, st.endedAt - base))}.`
-      : 'Des hiders sont restés introuvables : victoire des hiders.';
+      : st.endReason === 'time'
+        ? 'Le temps est écoulé : victoire des hiders.'
+        : "La manche a été terminée par l'hôte.";
     $('result-list').replaceChildren(
       ...hiders.map((p) =>
         h(
@@ -774,12 +817,13 @@
       }
     } else {
       time = fmt(st.nextPingAt - t);
+      const left = st.endsAt ? ` · fin de la chasse dans ${fmt(st.endsAt - t)}` : '';
       if (me.role === 'hider') {
         title = 'Prochain ping de votre position dans';
-        sub = mine ? `Dernier ping : ${ageText(t - mine.ts)}` : 'Aucun ping envoyé pour le moment.';
+        sub = (mine ? `Dernier ping : ${ageText(t - mine.ts)}` : 'Aucun ping envoyé pour le moment.') + left;
       } else {
         title = 'Prochain ping des hiders dans';
-        sub = `${alive} ${plural(alive, 'hider reste', 'hiders restent')} en fuite`;
+        sub = `${alive} ${plural(alive, 'hider reste', 'hiders restent')} en fuite${left}`;
       }
     }
     $('phase-title').textContent = title;

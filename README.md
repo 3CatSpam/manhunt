@@ -30,6 +30,7 @@ hiders' pings" option is enforced server-side, not just hidden in the UI.
 - First round: random split, half hiders / half hunters. Each next round: roles are swapped.
 - Hunters wait during the head start (default 10 min). Pings then start, every 5 min by default.
 - Hunters see every hider's last ping; hiders see their allies' last pings unless the host turned that option off.
+- The hunt has a configurable duration (default 1 h, counted from the end of the head start, or unlimited). When time runs out the hiders win.
 - A hider is out when they tap "Je me suis fait attraper" or a hunter marks them. The round ends when all hiders are caught (or the host ends it).
 
 ## Limits worth knowing

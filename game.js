@@ -11,7 +11,9 @@ const DEFAULT_SETTINGS = {
   radius: 5000, // mètres
   headStartMin: 10,
   pingEveryMin: 5,
+  durationMin: 60, // durée de la chasse, après l'avance ; 0 = illimitée
   hidersSeeHiders: true,
+  caughtDisplay: 'cross', // 'cross' : une croix là où le hider a été attrapé ; 'none' : plus rien
 };
 
 class GameError extends Error {}
@@ -61,7 +63,10 @@ class Room {
     this.releaseAt = null; // fin de l'avance : les hunters partent
     this.nextPingAt = null;
     this.endedAt = null;
+    this.endsAt = null; // fin programmée de la chasse, null si illimitée
+    this.endReason = null; // 'caught' | 'time' | 'host'
     this.pings = new Map(); // id du hider -> dernier ping partagé
+    this.catches = new Map(); // id du hider -> lieu de la capture
     this.conns = new Map(); // id -> websocket (géré par le transport)
   }
 
@@ -104,7 +109,10 @@ class Room {
     if (this.status === 'running') {
       p.left = true;
       p.online = false;
-      if (p.role === 'hider' && !p.caught) this.markCaught(id, id, now);
+      if (p.role === 'hider' && !p.caught) {
+        this.markCaught(id, id, now);
+        this.catches.delete(id); // un abandon n'est pas une capture : pas de croix
+      }
     } else {
       this.players.delete(id);
     }
@@ -131,7 +139,14 @@ class Room {
     if (patch.radius !== undefined) next.radius = toInt(patch.radius, 200, 30000, 'rayon');
     if (patch.headStartMin !== undefined) next.headStartMin = toInt(patch.headStartMin, 0, 60, 'avance');
     if (patch.pingEveryMin !== undefined) next.pingEveryMin = toInt(patch.pingEveryMin, 1, 30, 'intervalle');
+    if (patch.durationMin !== undefined) next.durationMin = toInt(patch.durationMin, 0, 480, 'durée');
     if (patch.hidersSeeHiders !== undefined) next.hidersSeeHiders = Boolean(patch.hidersSeeHiders);
+    if (patch.caughtDisplay !== undefined) {
+      if (patch.caughtDisplay !== 'cross' && patch.caughtDisplay !== 'none') {
+        throw new GameError('Réglage invalide : hiders attrapés.');
+      }
+      next.caughtDisplay = patch.caughtDisplay;
+    }
     this.settings = next;
   }
 
@@ -159,25 +174,33 @@ class Room {
       p.caughtAt = null;
     }
     this.pings.clear();
+    this.catches.clear();
     this.round++;
     this.status = 'running';
     this.startedAt = now;
     this.releaseAt = now + this.settings.headStartMin * MIN;
     this.nextPingAt = this.releaseAt;
     this.endedAt = null;
+    this.endsAt = this.settings.durationMin ? this.releaseAt + this.settings.durationMin * MIN : null;
+    this.endReason = null;
     this.lastActive = now;
     this.tick(now);
   }
 
   setPosition(id, lat, lng, acc, now = Date.now()) {
     const p = this.players.get(id);
-    if (!p || !isLat(lat) || !isLng(lng)) return;
+    if (!p || p.caught || !isLat(lat) || !isLng(lng)) return; // un hider attrapé n'est plus localisé
     p.live = { lat, lng, acc: Number.isFinite(acc) ? Math.round(acc) : null, ts: now };
   }
 
   // Avance l'horloge de la partie. Renvoie true si l'état visible a changé.
   tick(now = Date.now()) {
-    if (this.status !== 'running' || now < this.nextPingAt) return false;
+    if (this.status !== 'running') return false;
+    if (this.endsAt !== null && now >= this.endsAt) {
+      this.end(this.endsAt, 'time');
+      return true;
+    }
+    if (now < this.nextPingAt) return false;
     for (const p of this.players.values()) {
       if (p.role !== 'hider' || p.caught || !p.live) continue;
       this.pings.set(p.id, {
@@ -206,14 +229,17 @@ class Room {
     }
     target.caught = true;
     target.caughtAt = now;
+    if (target.live) this.catches.set(targetId, { lat: target.live.lat, lng: target.live.lng, ts: now });
+    this.pings.delete(targetId);
     this.lastActive = now;
     const alive = [...this.players.values()].some((p) => p.role === 'hider' && !p.caught);
-    if (!alive) this.end(now);
+    if (!alive) this.end(now, 'caught');
   }
 
-  end(now = Date.now()) {
+  end(now = Date.now(), reason = 'host') {
     if (this.status !== 'running') throw new GameError("La partie n'est pas en cours.");
     this.status = 'ended';
+    this.endReason = reason;
     this.endedAt = now;
     this.lastActive = now;
   }
@@ -228,8 +254,9 @@ class Room {
       p.caughtAt = null;
     }
     this.pings.clear();
+    this.catches.clear();
     this.status = 'lobby';
-    this.startedAt = this.releaseAt = this.nextPingAt = this.endedAt = null;
+    this.startedAt = this.releaseAt = this.nextPingAt = this.endedAt = this.endsAt = this.endReason = null;
     this.lastActive = now;
   }
 
@@ -248,6 +275,14 @@ class Room {
         (me?.role === 'hider' && this.settings.hidersSeeHiders);
       if (allowed) pings.push({ id, lat: ping.lat, lng: ping.lng, ts: ping.ts, fixAt: ping.fixAt });
     }
+    const catches = [];
+    if (this.settings.caughtDisplay === 'cross') {
+      for (const [id, spot] of this.catches) {
+        const sees =
+          reveal || id === viewerId || me?.role === 'hunter' || (me?.role === 'hider' && this.settings.hidersSeeHiders);
+        if (sees && this.players.has(id)) catches.push({ id, lat: spot.lat, lng: spot.lng, ts: spot.ts });
+      }
+    }
     const hiders = [...this.players.values()].filter((p) => p.role === 'hider');
     return {
       code: this.code,
@@ -261,6 +296,8 @@ class Room {
       releaseAt: this.releaseAt,
       nextPingAt: this.status === 'running' ? this.nextPingAt : null,
       endedAt: this.endedAt,
+      endsAt: this.endsAt,
+      endReason: this.endReason,
       allCaught: this.status === 'ended' && hiders.length > 0 && hiders.every((p) => p.caught),
       players: [...this.players.values()].map((p) => ({
         id: p.id,
@@ -272,6 +309,7 @@ class Room {
         left: p.left,
       })),
       pings,
+      catches,
     };
   }
 }

@@ -231,6 +231,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .pin.ally .bubble { background: #7ce9bd; }
 .pin.mine .bubble { background: var(--me); color: #05172b; }
 .pin.mine::after { border-top-color: var(--me); }
+.cross { transform: translate(-50%, -50%); text-align: center; width: max-content; pointer-events: none; }
+.cross b { display: block; font-size: 30px; line-height: 1; color: var(--hunter); text-shadow: 0 0 3px #000, 0 0 6px #000; }
+.cross span {
+  display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: rgba(0, 0, 0, 0.65);
+  padding: 1px 6px; border-radius: 8px; margin-top: 2px;
+}
 .leaflet-container { background: #1b2027; font: inherit; }
 .leaflet-popup-content-wrapper { background: var(--panel); color: var(--text); border-radius: 14px; }
 .leaflet-popup-tip { background: var(--panel); }

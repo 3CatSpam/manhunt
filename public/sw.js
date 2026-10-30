@@ -24,7 +24,8 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fichiers de l'appli : servis du cache puis rafraîchis en arrière-plan.
+// Fichiers de l'appli : réseau d'abord (les mises à jour s'appliquent tout de suite,
+// le client et le serveur restent d'accord), cache en secours hors connexion.
 // Tuiles de carte, géocodage et WebSocket passent directement par le réseau.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
@@ -32,14 +33,15 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname === '/ws') return;
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(req, { ignoreSearch: true });
-      const fresh = fetch(req)
-        .then((res) => {
-          if (res.ok) cache.put(req, res.clone());
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fresh;
+      try {
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch (err) {
+        const cached = await cache.match(req, { ignoreSearch: true });
+        if (cached) return cached;
+        throw err;
+      }
     })
   );
 });

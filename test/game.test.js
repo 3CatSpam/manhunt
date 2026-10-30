@@ -146,8 +146,9 @@ test('la manche se termine quand tous les hiders sont attrapés, puis les rôles
   assert.equal(room.round, 2);
 });
 
-test('en fin de partie tous les derniers pings sont révélés', () => {
+test('en fin de partie les pings des hiders encore libres sont révélés à tous', () => {
   const { room } = lobby();
+  room.updateSettings({ hidersSeeHiders: false });
   room.start(T0);
   const [h1, h2] = [...room.players.values()].filter((p) => p.role === 'hider');
   const hunter = [...room.players.values()].find((p) => p.role === 'hunter');
@@ -156,8 +157,66 @@ test('en fin de partie tous les derniers pings sont révélés', () => {
   room.tick(T0 + 10 * MIN);
   room.markCaught(hunter.id, h1.id, T0 + 11 * MIN);
   assert.equal(room.view(hunter.id).pings.length, 1, 'un hider attrapé disparaît de la carte');
+  assert.deepEqual(room.view(h2.id).pings.map((p) => p.id), [h2.id]);
   room.end(T0 + 12 * MIN);
-  assert.equal(room.view(h2.id).pings.length, 2);
+  assert.equal(room.view(h2.id).pings.length, 1);
+});
+
+test('un hider attrapé n’est plus pingé ni localisé', () => {
+  const { room } = lobby();
+  room.start(T0);
+  const [h1, h2] = [...room.players.values()].filter((p) => p.role === 'hider');
+  const hunter = [...room.players.values()].find((p) => p.role === 'hunter');
+  room.setPosition(h1.id, 48.1, 2.1, 5, T0);
+  room.setPosition(h2.id, 48.2, 2.2, 5, T0);
+  room.tick(T0 + 10 * MIN);
+  room.markCaught(hunter.id, h1.id, T0 + 11 * MIN);
+  room.setPosition(h1.id, 49, 3, 5, T0 + 12 * MIN); // son téléphone continue d'envoyer
+  room.tick(T0 + 15 * MIN);
+  assert.equal(room.pings.has(h1.id), false);
+  assert.equal(room.pings.get(h2.id).ts, T0 + 15 * MIN, 'les autres continuent d’être pingés');
+});
+
+test('réglage « croix » : le lieu de capture est visible des hunters et des hiders autorisés', () => {
+  const { room } = lobby();
+  room.start(T0);
+  const [h1, h2] = [...room.players.values()].filter((p) => p.role === 'hider');
+  const hunter = [...room.players.values()].find((p) => p.role === 'hunter');
+  room.setPosition(h1.id, 48.1, 2.1, 5, T0);
+  room.markCaught(hunter.id, h1.id, T0 + 11 * MIN);
+
+  const spot = room.view(hunter.id).catches;
+  assert.equal(spot.length, 1);
+  assert.deepEqual([spot[0].id, spot[0].lat, spot[0].lng], [h1.id, 48.1, 2.1]);
+  assert.equal(room.view(h2.id).catches.length, 1, 'alliés visibles par défaut');
+  assert.equal(room.view(h1.id).catches.length, 1);
+
+  room.settings = { ...room.settings, hidersSeeHiders: false };
+  assert.equal(room.view(h2.id).catches.length, 0);
+  assert.equal(room.view(hunter.id).catches.length, 1);
+});
+
+test('réglage « rien » : aucune trace du hider attrapé', () => {
+  const { room } = lobby();
+  room.updateSettings({ caughtDisplay: 'none' });
+  room.start(T0);
+  const [h1] = [...room.players.values()].filter((p) => p.role === 'hider');
+  const hunter = [...room.players.values()].find((p) => p.role === 'hunter');
+  room.setPosition(h1.id, 48.1, 2.1, 5, T0);
+  room.markCaught(hunter.id, h1.id, T0 + 11 * MIN);
+  assert.equal(room.view(hunter.id).catches.length, 0);
+  assert.equal(room.view(hunter.id).pings.length, 0);
+  assert.throws(() => room.updateSettings({ caughtDisplay: 'x' }), GameError);
+});
+
+test('un abandon ne laisse pas de croix', () => {
+  const { room } = lobby();
+  room.start(T0);
+  const hider = [...room.players.values()].find((p) => p.role === 'hider');
+  const hunter = [...room.players.values()].find((p) => p.role === 'hunter');
+  room.setPosition(hider.id, 48.1, 2.1, 5, T0);
+  room.removePlayer(hider.id, T0 + MIN);
+  assert.equal(room.view(hunter.id).catches.length, 0);
 });
 
 test('les réglages sont validés et bornés', () => {
@@ -170,6 +229,30 @@ test('les réglages sont validés et bornés', () => {
   assert.throws(() => room.updateSettings({ radius: 'abc' }), GameError);
   room.start(T0);
   assert.throws(() => room.updateSettings({ radius: 1000 }), /verrouillés/);
+});
+
+test('la chasse se termine à l’heure : victoire des hiders', () => {
+  const { room } = lobby();
+  room.updateSettings({ durationMin: 30 });
+  room.start(T0);
+  assert.equal(room.endsAt, T0 + 40 * MIN, 'la durée court à partir de la fin de l’avance');
+  assert.equal(room.tick(T0 + 39 * MIN), true, 'ping normal avant la fin');
+  assert.equal(room.status, 'running');
+  assert.equal(room.tick(T0 + 41 * MIN), true);
+  assert.equal(room.status, 'ended');
+  assert.equal(room.endedAt, T0 + 40 * MIN);
+  const view = room.view([...room.players.keys()][0]);
+  assert.equal(view.endReason, 'time');
+  assert.equal(view.allCaught, false);
+});
+
+test('durée illimitée : aucune fin programmée', () => {
+  const { room } = lobby();
+  room.updateSettings({ durationMin: 0 });
+  room.start(T0);
+  assert.equal(room.endsAt, null);
+  room.tick(T0 + 600 * MIN);
+  assert.equal(room.status, 'running');
 });
 
 test('quitter en pleine partie fait perdre un hider', () => {
