@@ -337,7 +337,8 @@
   function isOut(pos) {
     const city = state?.settings.city;
     if (!pos || !city) return false;
-    return distance(pos, city) > state.settings.radius + Math.min(pos.acc ?? 0, 40);
+    const { radius } = state.settings;
+    return distance(pos, city) > radius + Math.min(pos.acc ?? 0, 40, radius / 4); // même marge que le serveur
   }
 
   function startGeo() {
@@ -783,8 +784,8 @@
     const radius = $('radius');
     radius.disabled = !host;
     if (!draggingRadius) {
-      radius.value = String(s.radius / 1000);
-      $('radius-val').textContent = `${(s.radius / 1000).toFixed(1).replace('.', ',')} km`;
+      radius.value = String(sliderOf(s.radius));
+      $('radius-val').textContent = radiusText(s.radius);
     }
     radiusFill();
 
@@ -825,6 +826,18 @@
     updateLobbyMap();
   }
 
+  // Curseur du rayon en échelle progressive : 50 m à 25 km, fin en bas, rapide en haut.
+  const R_MIN = 50;
+  const R_MAX = 25000;
+  const SLIDER_MAX = 1000;
+  function radiusOf(v) {
+    const m = R_MIN * (R_MAX / R_MIN) ** (v / SLIDER_MAX);
+    const step = m < 1000 ? 10 : m < 5000 ? 50 : 100;
+    return clamp(Math.round(m / step) * step, R_MIN, R_MAX);
+  }
+  const sliderOf = (m) => Math.round((SLIDER_MAX * Math.log(clamp(m, R_MIN, R_MAX) / R_MIN)) / Math.log(R_MAX / R_MIN));
+  const radiusText = (m) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(m < 10000 ? 2 : 1).replace(/\.?0+$/, '').replace('.', ',')} km`);
+
   function radiusFill() {
     const r = $('radius');
     const pct = ((Number(r.value) - Number(r.min)) / (Number(r.max) - Number(r.min))) * 100;
@@ -849,8 +862,8 @@
   $('radius').addEventListener('input', (e) => {
     if (!isHost()) return;
     draggingRadius = true;
-    const metres = Math.round(Number(e.target.value) * 1000);
-    $('radius-val').textContent = `${(metres / 1000).toFixed(1).replace('.', ',')} km`;
+    const metres = radiusOf(Number(e.target.value));
+    $('radius-val').textContent = radiusText(metres);
     radiusFill();
     if (state.settings.city) lZone = drawZone(lmap, lZone, state.settings.city, metres);
     clearTimeout(radiusTimer);
@@ -859,7 +872,7 @@
   $('radius').addEventListener('change', (e) => {
     clearTimeout(radiusTimer);
     draggingRadius = false;
-    send({ type: 'settings', patch: { radius: Math.round(Number(e.target.value) * 1000) } });
+    send({ type: 'settings', patch: { radius: radiusOf(Number(e.target.value)) } });
   });
 
   for (const [id, key] of [

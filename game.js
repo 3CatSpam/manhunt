@@ -8,6 +8,10 @@ const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const MAX_CHAT = 150;
 const CHAT_LEN = 200;
 const ZONE_TOLERANCE = 40; // mètres de marge pour l'imprécision du GPS en bord de zone
+const MIN_RADIUS = 50; // en dessous, l'imprécision du GPS déclencherait de fausses sorties de zone
+
+// Marge GPS en bord de zone : la précision annoncée, plafonnée à 40 m et au quart du rayon.
+const zoneMargin = (acc, radius) => Math.min(acc ?? 0, ZONE_TOLERANCE, radius / 4);
 
 // Barème des points de la manche.
 const POINTS = {
@@ -185,7 +189,7 @@ class Room {
       }
       next.city = { name: c.name.trim().slice(0, 80) || 'Zone', lat: c.lat, lng: c.lng };
     }
-    if (patch.radius !== undefined) next.radius = toInt(patch.radius, 200, 30000, 'rayon');
+    if (patch.radius !== undefined) next.radius = toInt(patch.radius, MIN_RADIUS, 30000, 'rayon');
     if (patch.headStartMin !== undefined) next.headStartMin = toInt(patch.headStartMin, 0, 60, 'avance');
     if (patch.pingEveryMin !== undefined) next.pingEveryMin = toInt(patch.pingEveryMin, 1, 30, 'intervalle');
     if (patch.durationMin !== undefined) next.durationMin = toInt(patch.durationMin, 0, 480, 'durée');
@@ -300,7 +304,7 @@ class Room {
   checkZone(p, now) {
     const { city, radius, outGraceSec } = this.settings;
     const watched = this.status === 'running' && p.role === 'hider' && !p.caught && !p.left && p.live && city;
-    const out = watched && distance(p.live, city) > radius + Math.min(p.live.acc ?? 0, ZONE_TOLERANCE);
+    const out = watched && distance(p.live, city) > radius + zoneMargin(p.live.acc, radius);
     if (!out) {
       const changed = p.outSince !== null || p.exposed;
       p.outSince = null;

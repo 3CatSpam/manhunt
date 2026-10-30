@@ -293,6 +293,20 @@ test('hors zone : alerte puis position révélée au bout de 30 s', () => {
   assert.equal(hider.outSince, null);
 });
 
+test('petite zone : rayon de 50 m minimum, marge GPS réduite', () => {
+  const { room } = lobby();
+  room.updateSettings({ radius: 10 });
+  assert.equal(room.settings.radius, 50);
+  room.start(T0);
+  const [hider] = role(room, 'hider');
+  // 70 m au nord du centre, précision annoncée 30 m : dehors (marge plafonnée à 12,5 m)
+  room.setPosition(hider.id, PARIS.lat + 70 / 111320, PARIS.lng, 30, T0);
+  assert.notEqual(hider.outSince, null);
+  // 55 m : dans la marge
+  room.setPosition(hider.id, PARIS.lat + 55 / 111320, PARIS.lng, 30, T0 + 1000);
+  assert.equal(hider.outSince, null);
+});
+
 test('hors zone en mode simple alerte : jamais révélé', () => {
   const { room } = lobby();
   room.updateSettings({ outGraceSec: 0 });

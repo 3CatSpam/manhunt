@@ -10,7 +10,14 @@ Ce qui a été ajouté au jeu le 30 octobre 2026, pour la partie d'Halloween.
   (fantôme rouge « hors zone, en direct ») jusqu'à ce qu'il revienne. Les hunters reçoivent une alerte.
 - Réglable par l'hôte : révélé après 30 s, après 1 min, ou simple alerte sans révélation.
 - Un hunter hors zone est seulement prévenu.
-- Marge de 40 m maximum pour l'imprécision du GPS, pour éviter les fausses alertes en bord de zone.
+- Marge pour l'imprécision du GPS en bord de zone : la précision annoncée par le téléphone, plafonnée à 40 m
+  et au quart du rayon, pour éviter les fausses alertes.
+
+### Taille de la zone
+- Rayon de **50 m à 25 km** (avant : 200 m minimum), pour jouer aussi dans un parc ou un pâté de maisons.
+- Curseur progressif : par pas de 10 m pour les petites zones, plus rapide pour les grandes.
+- Pas en dessous de 50 m : la précision du GPS d'un téléphone (5 à 20 m dehors, souvent pire entre les immeubles)
+  ferait sortir les joueurs de la zone sans qu'ils bougent.
 
 ### Équipes
 - **Répartition des rôles** au choix :
@@ -62,7 +69,7 @@ Ce qui a été ajouté au jeu le 30 octobre 2026, pour la partie d'Halloween.
 - `game.js` : toutes les nouvelles règles (zone, rôles, chat, scores, podium, sauvegarde), sans entrée/sortie.
 - `server.js` : nouveaux messages `role`, `host`, `kick`, `chat`, `final`, `reset`, et la sauvegarde sur disque.
 - `public/` : interface refaite (`index.html`, `style.css`, `app.js`).
-- `test/game.test.js` : 12 tests en plus, 32 au total (`npm test`).
+- `test/game.test.js` : 13 tests en plus, 33 au total (`npm test`).
 - `npm test` marche de nouveau sous Node 24.
 
 ## Jouer ce soir
