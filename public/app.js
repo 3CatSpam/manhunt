@@ -783,9 +783,10 @@
 
     const radius = $('radius');
     radius.disabled = !host;
+    $('radius-val').disabled = !host;
     if (!draggingRadius) {
       radius.value = String(sliderOf(s.radius));
-      $('radius-val').textContent = radiusText(s.radius);
+      $('radius-num').textContent = radiusText(s.radius);
     }
     radiusFill();
 
@@ -863,7 +864,7 @@
     if (!isHost()) return;
     draggingRadius = true;
     const metres = radiusOf(Number(e.target.value));
-    $('radius-val').textContent = radiusText(metres);
+    $('radius-num').textContent = radiusText(metres);
     radiusFill();
     if (state.settings.city) lZone = drawZone(lmap, lZone, state.settings.city, metres);
     clearTimeout(radiusTimer);
@@ -874,6 +875,45 @@
     draggingRadius = false;
     send({ type: 'settings', patch: { radius: radiusOf(Number(e.target.value)) } });
   });
+
+  // Rayon tapé à la main : « 300 », « 300 m », « 1,5 km ». Sans unité, moins de 50 se lit en km.
+  function parseRadius(text) {
+    const m = String(text).trim().toLowerCase().replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(km|m)?$/);
+    if (!m) return null;
+    const n = Number(m[1]);
+    const unit = m[2] || (n < R_MIN ? 'km' : 'm');
+    return Math.round(unit === 'km' ? n * 1000 : n);
+  }
+
+  function closeRadiusInput(apply) {
+    const input = $('radius-input');
+    if (input.hidden) return;
+    input.hidden = true;
+    $('radius-val').hidden = false;
+    if (!apply) return;
+    const metres = parseRadius(input.value);
+    if (metres == null) return toast('Écris un rayon comme « 300 m » ou « 1,5 km ».', 'alert');
+    const radius = clamp(metres, R_MIN, R_MAX);
+    if (radius !== metres) toast('Le rayon va de 50 m à 25 km.');
+    send({ type: 'settings', patch: { radius } });
+  }
+
+  $('radius-val').addEventListener('click', () => {
+    if (!isHost()) return;
+    const input = $('radius-input');
+    input.value = radiusText(state.settings.radius);
+    $('radius-val').hidden = true;
+    input.hidden = false;
+    input.focus();
+    input.select();
+  });
+  $('radius-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      closeRadiusInput(true);
+    } else if (e.key === 'Escape') closeRadiusInput(false);
+  });
+  $('radius-input').addEventListener('blur', () => closeRadiusInput(true));
 
   for (const [id, key] of [
     ['set-head', 'headStartMin'],

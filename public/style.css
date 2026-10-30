@@ -246,7 +246,17 @@ select:disabled { opacity: 1; color: var(--fog); cursor: default; background-ima
 .map-preview { height: 250px; border-radius: var(--r); overflow: hidden; margin: 14px 0; isolation: isolate; }
 .range { display: block; }
 .range span { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; font-weight: 600; }
-.range b { font: 900 30px/1 var(--display); color: var(--pumpkin); text-shadow: 0 0 18px rgba(255, 122, 26, 0.45); }
+.radius-val {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 0; border: 0; background: none; cursor: pointer;
+  font: 900 30px/1 var(--display); color: var(--pumpkin); text-shadow: 0 0 18px rgba(255, 122, 26, 0.45);
+}
+.radius-val svg { width: 18px; height: 18px; color: var(--fog); }
+.radius-val:disabled { cursor: default; }
+.radius-val:disabled svg { display: none; }
+.radius-input {
+  width: 140px; padding: 6px 10px; text-align: right;
+  font: 900 26px/1 var(--display); color: var(--pumpkin); border-color: var(--pumpkin);
+}
 input[type="range"] { width: 100%; -webkit-appearance: none; appearance: none; background: transparent; height: 36px; }
 input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--pumpkin) var(--fill, 20%), var(--night-4) var(--fill, 20%)); }
 input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--night-4); }

@@ -145,11 +145,18 @@
       </button>
     </div>
     <div id="lobby-map" class="map-preview"></div>
-    <label class="range">
-      <span>Rayon <b id="radius-val"></b></span>
+    <div class="range">
+      <span>
+        Rayon
+        <button type="button" class="radius-val" id="radius-val" aria-label="Taper le rayon à la main">
+          <span id="radius-num"></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
+        </button>
+        <input id="radius-input" class="radius-input" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-label="Rayon (ex : 300 m ou 1,5 km)" hidden>
+      </span>
       <input id="radius" type="range" min="0" max="1000" step="1" aria-label="Rayon de la zone">
-    </label>
-    <p class="hint" id="map-hint">Touche la carte pour déplacer le centre.</p>
+    </div>
+    <p class="hint" id="map-hint">Touche la carte pour déplacer le centre, ou le rayon pour le taper.</p>
 
     <h2 class="section-label">Équipes</h2>
     <div class="setting col">
