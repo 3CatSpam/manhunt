@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'manhunt-v1';
+const CACHE = 'manhunt-v2';
 const SHELL = [
   '/',
   '/app.js',

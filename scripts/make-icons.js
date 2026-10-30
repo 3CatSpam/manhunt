@@ -1,13 +1,14 @@
 'use strict';
 
-// Génère les icônes PNG de la PWA (cible rouge sur fond sombre) sans dépendance.
+// Génère les icônes PNG de la PWA (lune et viseur sur fond de nuit) sans dépendance.
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 
 const OUT = path.join(__dirname, '..', 'public', 'icons');
-const BG = [14, 17, 22];
-const RED = [255, 93, 93];
+const BG = [11, 9, 16];
+const MOON = [244, 228, 193];
+const PUMPKIN = [255, 122, 26];
 
 const crcTable = Array.from({ length: 256 }, (_, n) => {
   let c = n;
@@ -30,15 +31,14 @@ function chunk(type, data) {
   return Buffer.concat([len, body, crc]);
 }
 
-// Proportion de rouge au pixel (x, y) en coordonnées centrées [-1, 1].
-function target(x, y) {
+// Couleur au pixel (x, y) en coordonnées centrées [-1, 1] : viseur citrouille sur un croissant de lune.
+function paint(x, y) {
   const d = Math.hypot(x, y);
-  const ring = (r, w) => Math.abs(d - r) < w;
-  const dot = d < 0.14;
-  const outer = ring(0.52, 0.055);
-  const inner = ring(0.3, 0.035);
-  const tick = (Math.abs(x) < 0.04 || Math.abs(y) < 0.04) && d > 0.4 && d < 0.72;
-  return dot || outer || inner || tick;
+  const ring = Math.abs(d - 0.56) < 0.04;
+  const tick = (Math.abs(x) < 0.035 || Math.abs(y) < 0.035) && d > 0.46 && d < 0.76;
+  if (ring || tick || d < 0.05) return PUMPKIN;
+  const moon = d < 0.38 && Math.hypot(x - 0.27, y + 0.2) > 0.33;
+  return moon ? MOON : BG;
 }
 
 function render(size) {
@@ -47,17 +47,17 @@ function render(size) {
   for (let py = 0; py < size; py++) {
     raw[py * (size * 3 + 1)] = 0;
     for (let px = 0; px < size; px++) {
-      let hit = 0;
+      const sum = [0, 0, 0];
       for (let sy = 0; sy < SS; sy++) {
         for (let sx = 0; sx < SS; sx++) {
           const x = ((px + (sx + 0.5) / SS) / size) * 2 - 1;
           const y = ((py + (sy + 0.5) / SS) / size) * 2 - 1;
-          if (target(x, y)) hit++;
+          const c = paint(x, y);
+          for (let i = 0; i < 3; i++) sum[i] += c[i];
         }
       }
-      const a = hit / (SS * SS);
       const o = py * (size * 3 + 1) + 1 + px * 3;
-      for (let i = 0; i < 3; i++) raw[o + i] = Math.round(BG[i] * (1 - a) + RED[i] * a);
+      for (let i = 0; i < 3; i++) raw[o + i] = Math.round(sum[i] / (SS * SS));
     }
   }
   const ihdr = Buffer.alloc(13);

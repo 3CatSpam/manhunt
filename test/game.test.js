@@ -89,9 +89,7 @@ test('les hunters voient les pings, les hiders selon le réglage', () => {
   assert.equal(room.view(hunter.id).pings.length, 2);
   assert.equal(room.view(h1.id).pings.length, 2, 'réglage par défaut : alliés visibles');
 
-  room.status = 'lobby';
-  room.updateSettings({ hidersSeeHiders: false });
-  room.status = 'running';
+  room.settings = { ...room.settings, hidersSeeHiders: false };
   const own = room.view(h1.id).pings;
   assert.deepEqual(own.map((p) => p.id), [h1.id], 'seul son propre ping reste visible');
   assert.equal(room.view(hunter.id).pings.length, 2);
@@ -262,4 +260,197 @@ test('quitter en pleine partie fait perdre un hider', () => {
   room.removePlayer(hider.id, T0 + MIN);
   assert.equal(hider.caught, true);
   assert.equal(hider.left, true);
+});
+
+const IN = [48.86, 2.35]; // dans la zone de Paris (5 km)
+const OUT = [48.95, 2.35]; // à 10 km au nord
+const role = (room, r) => [...room.players.values()].filter((p) => p.role === r);
+
+test('hors zone : alerte puis position révélée au bout de 30 s', () => {
+  const { room } = lobby();
+  room.start(T0);
+  const [hider] = role(room, 'hider');
+  const [hunter] = role(room, 'hunter');
+  room.setPosition(hider.id, ...IN, 5, T0 + MIN);
+  assert.equal(hider.outSince, null);
+
+  assert.equal(room.setPosition(hider.id, ...OUT, 5, T0 + 2 * MIN), true);
+  assert.equal(room.view(hider.id).players.find((p) => p.id === hider.id).outSince, T0 + 2 * MIN);
+  assert.equal(room.view(hunter.id).players.find((p) => p.id === hider.id).outSince, null, 'les autres ne le savent pas');
+  room.tick(T0 + 2 * MIN + 29000);
+  assert.equal(room.view(hunter.id).pings.length, 0, 'pas encore révélé');
+
+  room.tick(T0 + 2 * MIN + 30000);
+  assert.equal(hider.exposed, true);
+  const [ping] = room.view(hunter.id).pings;
+  assert.deepEqual([ping.lat, ping.out], [OUT[0], true]);
+
+  room.setPosition(hider.id, 48.96, 2.35, 5, T0 + 3 * MIN);
+  assert.equal(room.view(hunter.id).pings[0].lat, 48.96, 'suivi tant qu’il reste dehors');
+
+  room.setPosition(hider.id, ...IN, 5, T0 + 4 * MIN);
+  assert.equal(hider.exposed, false);
+  assert.equal(hider.outSince, null);
+});
+
+test('hors zone en mode simple alerte : jamais révélé', () => {
+  const { room } = lobby();
+  room.updateSettings({ outGraceSec: 0 });
+  room.start(T0);
+  const [hider] = role(room, 'hider');
+  room.setPosition(hider.id, ...OUT, 5, T0);
+  room.tick(T0 + 5 * MIN);
+  assert.equal(hider.outSince, T0);
+  assert.equal(hider.exposed, false);
+});
+
+test('nombre de hunters réglable', () => {
+  const { room } = lobby(['A', 'B', 'C', 'D', 'E', 'F']);
+  room.updateSettings({ hunterCount: 1 });
+  room.start(T0);
+  assert.equal(role(room, 'hunter').length, 1);
+  assert.equal(role(room, 'hider').length, 5);
+});
+
+test('mode « inversés » avec 1 hunter : chacun chasse à son tour', () => {
+  const { room } = lobby(['A', 'B', 'C', 'D', 'E']);
+  room.updateSettings({ hunterCount: 1 });
+  const hunters = [];
+  for (let i = 0; i < 5; i++) {
+    room.start(T0 + i * 100 * MIN);
+    hunters.push(role(room, 'hunter')[0].name);
+    room.end(T0 + i * 100 * MIN + 1);
+    room.nextRound(T0 + i * 100 * MIN + 2);
+    assert.equal(role(room, 'hunter').length, 1, 'le prochain hunter est annoncé dans le salon');
+  }
+  assert.equal(new Set(hunters).size, 5);
+});
+
+test('mode « aléatoire » : rien n’est annoncé dans le salon', () => {
+  const { room } = lobby();
+  room.updateSettings({ roleMode: 'random' });
+  room.start(T0);
+  room.end(T0 + MIN);
+  room.nextRound(T0 + 2 * MIN);
+  assert.ok([...room.players.values()].every((p) => p.role === null));
+});
+
+test('mode « à la main » : l’hôte place les joueurs, le reste est complété', () => {
+  const { room, players } = lobby();
+  assert.throws(() => room.setRole(players[0].id, 'hunter'), /à la main/);
+  room.updateSettings({ roleMode: 'manual' });
+  room.setRole(players[0].id, 'hunter');
+  room.setRole(players[1].id, 'hunter');
+  room.setRole(players[2].id, 'hunter');
+  room.start(T0);
+  assert.deepEqual(
+    players.map((p) => p.role),
+    ['hunter', 'hunter', 'hunter', 'hider']
+  );
+  room.end(T0 + MIN);
+  room.nextRound(T0 + 2 * MIN);
+  assert.equal(players[0].role, 'hunter', 'les rôles restent tels quels');
+  for (const p of players) room.setRole(p.id, 'hunter');
+  assert.throws(() => room.start(T0 + 3 * MIN), /au moins un hider/);
+});
+
+test('l’hôte peut exclure un joueur et passer la main', () => {
+  const { room, players } = lobby();
+  const [host, ben] = players;
+  assert.throws(() => room.kick(host.id), GameError);
+  room.kick(ben.id, T0);
+  assert.equal(room.players.has(ben.id), false);
+  room.setHost(players[2].id);
+  assert.equal(room.hostId, players[2].id);
+
+  room.start(T0);
+  const hider = role(room, 'hider').find((p) => p.id !== room.hostId);
+  room.kick(hider.id, T0 + MIN);
+  assert.equal(hider.left, true);
+  assert.equal(room.findByToken(hider.token), null, 'un exclu ne peut pas reprendre sa session');
+});
+
+test('chat : les messages d’équipe restent secrets jusqu’à la fin de la manche', () => {
+  const { room } = lobby();
+  room.addChat(room.hostId, 'Salut tout le monde', 'team', T0);
+  room.start(T0);
+  const [h1, h2] = role(room, 'hider');
+  const [hunter] = role(room, 'hunter');
+  room.addChat(h1.id, 'Je suis au parc', 'team', T0 + MIN);
+  room.addChat(hunter.id, 'Bonne chance', 'all', T0 + MIN);
+  assert.equal(room.addChat(h1.id, '   ', 'team', T0 + MIN), false);
+
+  assert.deepEqual(room.view(h2.id).chat.map((m) => m.text), ['Salut tout le monde', 'Je suis au parc', 'Bonne chance']);
+  assert.deepEqual(room.view(hunter.id).chat.map((m) => m.text), ['Salut tout le monde', 'Bonne chance']);
+  room.end(T0 + 2 * MIN);
+  assert.equal(room.view(hunter.id).chat.length, 3, 'révélés en fin de manche');
+  room.nextRound(T0 + 3 * MIN);
+  assert.equal(room.view(hunter.id).chat.length, 2, 'effacés à la manche suivante');
+});
+
+test('scores : captures, minutes en fuite et cumul sur plusieurs manches', () => {
+  const { room } = lobby();
+  room.updateSettings({ headStartMin: 0, durationMin: 30 });
+  room.start(T0);
+  const [h1, h2] = role(room, 'hider');
+  const [k1, k2] = role(room, 'hunter');
+  room.markCaught(k1.id, h1.id, T0 + 12 * MIN + 30000);
+  room.markCaught(h2.id, h2.id, T0 + 20 * MIN, k2.id); // se déclare attrapé par k2
+  assert.equal(room.status, 'ended');
+  assert.deepEqual(
+    [h1, h2, k1, k2].map((p) => room.lastRound[p.id].pts),
+    [120, 200, 150, 150]
+  );
+  assert.equal(room.lastRound[k1.id].catches, 1);
+
+  room.nextRound(T0 + 21 * MIN);
+  room.start(T0 + 22 * MIN);
+  room.tick(T0 + 52 * MIN);
+  assert.equal(room.endReason, 'time');
+  assert.equal(room.lastRound[k1.id].pts, 30 * 10 + 50, 'ancien hunter : 30 min en fuite + bonus');
+  assert.equal(k1.score, 150 + 350);
+});
+
+test('capture déclarée sans hunter : points partagés', () => {
+  const { room } = lobby();
+  room.updateSettings({ headStartMin: 0 });
+  room.start(T0);
+  const [h1] = role(room, 'hider');
+  const [k1, k2] = role(room, 'hunter');
+  room.markCaught(h1.id, h1.id, T0 + MIN);
+  room.end(T0 + 2 * MIN);
+  assert.equal(room.lastRound[k1.id].pts, 50);
+  assert.equal(room.lastRound[k2.id].pts, 50);
+});
+
+test('podium puis nouvelle partie à zéro', () => {
+  const { room } = lobby();
+  assert.throws(() => room.finish(T0), /au moins une manche/);
+  room.start(T0);
+  assert.throws(() => room.finish(T0), /Termine la manche/);
+  room.end(T0 + 20 * MIN);
+  room.finish(T0 + 21 * MIN);
+  assert.equal(room.status, 'final');
+  assert.ok(room.view(room.hostId).players.some((p) => p.score > 0));
+  room.reset(T0 + 22 * MIN);
+  assert.equal(room.status, 'lobby');
+  assert.equal(room.round, 0);
+  assert.ok([...room.players.values()].every((p) => p.score === 0 && p.role === null));
+});
+
+test('sauvegarde : une partie en cours survit à un redémarrage', () => {
+  const { room } = lobby();
+  room.start(T0);
+  const [hider] = role(room, 'hider');
+  room.setPosition(hider.id, ...IN, 5, T0 + MIN);
+  room.addChat(hider.id, 'coucou', 'team', T0 + MIN);
+
+  const copy = Room.fromJSON(JSON.parse(JSON.stringify(room)));
+  assert.equal(copy.status, 'running');
+  assert.equal(copy.findByToken(hider.token).id, hider.id);
+  assert.ok([...copy.players.values()].every((p) => !p.online));
+  assert.equal(copy.conns.size, 0);
+  copy.tick(T0 + 10 * MIN);
+  assert.equal(copy.pings.get(hider.id).lat, IN[0]);
+  assert.equal(copy.view(hider.id).chat.length, 1);
 });

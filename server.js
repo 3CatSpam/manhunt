@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const express = require('express');
@@ -9,8 +10,10 @@ const { Room, GameError, makeCode } = require('./game');
 const PORT = Number(process.env.PORT) || 3000;
 const ROOM_IDLE_MS = 3 * 60 * 60 * 1000;
 const MAX_MESSAGE_BYTES = 4096;
+const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data', 'rooms.json');
 
 const rooms = new Map();
+let dirty = false; // une sauvegarde sur disque est en attente
 
 const app = express();
 app.disable('x-powered-by');
@@ -32,6 +35,7 @@ function send(ws, msg) {
 }
 
 function broadcast(room) {
+  dirty = true;
   const now = Date.now();
   for (const [id, ws] of room.conns) send(ws, { type: 'state', state: room.view(id, now) });
 }
@@ -60,7 +64,44 @@ function detach(ws) {
 }
 
 function dropRoomIfEmpty(room) {
-  if (room.isEmpty()) rooms.delete(room.code);
+  if (room.isEmpty()) {
+    rooms.delete(room.code);
+    dirty = true;
+  }
+}
+
+// Sauvegarde des salons : un redémarrage du serveur ne coupe plus les parties en cours.
+function save() {
+  if (!dirty) return;
+  dirty = false;
+  try {
+    fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
+    const tmp = `${DATA_FILE}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify([...rooms.values()]));
+    fs.renameSync(tmp, DATA_FILE);
+  } catch (err) {
+    console.error('Sauvegarde impossible :', err.message);
+  }
+}
+
+function load() {
+  let list;
+  try {
+    list = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  } catch (err) {
+    if (err.code !== 'ENOENT') console.error('Lecture de la sauvegarde impossible :', err.message);
+    return;
+  }
+  const now = Date.now();
+  for (const data of list) {
+    try {
+      const room = Room.fromJSON(data);
+      if (now - room.lastActive < ROOM_IDLE_MS) rooms.set(room.code, room);
+    } catch (err) {
+      console.error(`Salon ${data?.code} ignoré :`, err.message);
+    }
+  }
+  if (rooms.size) console.log(`${rooms.size} salon(s) restauré(s).`);
 }
 
 function handle(ws, msg) {
@@ -104,7 +145,8 @@ function handle(ws, msg) {
     case 'pos':
       if (now - (ws.lastPos ?? 0) < 2000) return;
       ws.lastPos = now;
-      room.setPosition(id, msg.lat, msg.lng, msg.acc, now);
+      dirty = true;
+      if (room.setPosition(id, msg.lat, msg.lng, msg.acc, now)) break;
       return;
     case 'settings':
       if (!isHost) throw new GameError("Seul l'hôte peut changer les réglages.");
@@ -115,7 +157,7 @@ function handle(ws, msg) {
       room.start(now);
       break;
     case 'caught':
-      room.markCaught(id, msg.target ?? id, now);
+      room.markCaught(id, msg.target ?? id, now, msg.by ?? null);
       break;
     case 'end':
       if (!isHost) throw new GameError("Seul l'hôte peut terminer la partie.");
@@ -124,6 +166,38 @@ function handle(ws, msg) {
     case 'next':
       if (!isHost) throw new GameError("Seul l'hôte peut lancer la manche suivante.");
       room.nextRound(now);
+      break;
+    case 'final':
+      if (!isHost) throw new GameError("Seul l'hôte peut terminer la soirée.");
+      room.finish(now);
+      break;
+    case 'reset':
+      if (!isHost) throw new GameError("Seul l'hôte peut relancer une partie.");
+      room.reset(now);
+      break;
+    case 'role':
+      if (!isHost) throw new GameError("Seul l'hôte choisit les rôles.");
+      room.setRole(msg.target, msg.role ?? null);
+      break;
+    case 'host':
+      if (!isHost) throw new GameError("Seul l'hôte peut passer la main.");
+      room.setHost(msg.target);
+      break;
+    case 'kick': {
+      if (!isHost) throw new GameError("Seul l'hôte peut exclure un joueur.");
+      room.kick(msg.target, now);
+      const out = room.conns.get(msg.target);
+      if (out) {
+        room.conns.delete(msg.target);
+        out.session = null;
+        send(out, { type: 'kicked' });
+      }
+      break;
+    }
+    case 'chat':
+      if (now - (ws.lastChat ?? 0) < 250) throw new GameError('Doucement, un message à la fois.');
+      ws.lastChat = now;
+      if (!room.addChat(id, msg.text, msg.ch, now)) return;
       break;
     case 'leave':
       room.conns.delete(id);
@@ -164,12 +238,15 @@ wss.on('connection', (ws) => {
   ws.on('error', () => {});
 });
 
-// Horloge de jeu : ping des positions, nettoyage des salons abandonnés.
+// Horloge de jeu : ping des positions, sorties de zone, nettoyage des salons abandonnés.
 setInterval(() => {
   const now = Date.now();
   for (const room of rooms.values()) {
     if (room.tick(now)) broadcast(room);
-    if (room.conns.size === 0 && now - room.lastActive > ROOM_IDLE_MS) rooms.delete(room.code);
+    if (room.conns.size === 0 && now - room.lastActive > ROOM_IDLE_MS) {
+      rooms.delete(room.code);
+      dirty = true;
+    }
   }
 }, 1000);
 
@@ -186,6 +263,15 @@ setInterval(() => {
 }, 25000);
 
 if (require.main === module) {
+  load();
+  setInterval(save, 5000);
+  for (const sig of ['SIGINT', 'SIGTERM']) {
+    process.on(sig, () => {
+      dirty = true;
+      save();
+      process.exit(0);
+    });
+  }
   server.listen(PORT, () => console.log(`Manhunt prêt sur http://localhost:${PORT}`));
 }
 

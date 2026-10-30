@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0e1116">
+  <meta name="theme-color" content="#0b0910">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,148 +12,229 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Big+Shoulders+Display:wght@700;800;900&display=swap">
   <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <!-- Accueil -->
   <section id="home" class="screen scroll">
+    <svg class="scene" viewBox="0 0 400 220" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="home-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0b0910"/>
+          <stop offset="0.85" stop-color="#2b1b3c"/>
+        </linearGradient>
+        <radialGradient id="home-glow">
+          <stop offset="0" stop-color="#ffe7a8" stop-opacity=".3"/>
+          <stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/>
+        </radialGradient>
+        <path id="trees" d="M0 220V200L-6.0 200.0L-4.0 168.9L-1.8 170.5L-2.6 146.0L-0.4 147.6L1.0 118.1L2.4 147.6L4.6 146.0L3.8 170.5L6.0 168.9L8.0 200.0L3.1 200.0L5.5 172.7L8.3 174.1L7.3 152.5L10.1 154.0L11.8 128.1L13.5 154.0L16.3 152.5L15.3 174.1L18.1 172.7L20.5 200.0L15.9 200.0L18.6 172.2L21.7 173.7L20.5 151.7L23.6 153.2L25.5 126.9L27.5 153.2L30.6 151.7L29.4 173.7L32.5 172.2L35.2 200.0L31.6 200.0L34.8 173.6L38.4 174.9L37.0 154.1L40.7 155.5L42.9 130.4L45.2 155.5L48.8 154.1L47.5 174.9L51.1 173.6L54.3 200.0L49.1 200.0L52.9 182.3L57.2 183.2L55.6 169.3L60.0 170.2L62.7 153.4L65.4 170.2L69.7 169.3L68.1 183.2L72.4 182.3L76.2 200.0L67.6 200.0L71.1 173.3L75.2 174.7L73.6 153.6L77.7 155.0L80.2 129.7L82.8 155.0L86.8 153.6L85.3 174.7L89.3 173.3L92.9 200.0L82.0 200.0L85.5 177.8L89.4 179.0L88.0 161.5L91.9 162.7L94.4 141.7L96.9 162.7L100.9 161.5L99.4 179.0L103.4 177.8L106.9 200.0L103.7 200.0L107.5 184.7L111.8 185.5L110.2 173.3L114.5 174.2L117.2 159.6L119.9 174.2L124.2 173.3L122.6 185.5L126.9 184.7L130.7 200.0L123.4 200.0L127.4 173.5L132.0 174.9L130.3 153.9L134.9 155.3L137.8 130.2L140.6 155.3L145.2 153.9L143.5 174.9L148.1 173.5L152.1 200.0L145.7 200.0L148.9 169.1L152.7 170.7L151.3 146.3L155.0 147.9L157.3 118.6L159.6 147.9L163.3 146.3L161.9 170.7L165.7 169.1L168.9 200.0L165.9 200.0L168.6 180.5L171.8 181.5L170.6 166.0L173.8 167.1L175.8 148.6L177.8 167.1L181.0 166.0L179.8 181.5L183.0 180.5L185.8 200.0L182.7 200.0L185.4 184.1L188.5 184.9L187.3 172.3L190.4 173.2L192.3 158.1L194.3 173.2L197.4 172.3L196.2 184.9L199.3 184.1L202.0 200.0L195.3 200.0L198.2 181.3L201.6 182.2L200.3 167.4L203.7 168.4L205.7 150.7L207.8 168.4L211.2 167.4L209.9 182.2L213.2 181.3L216.2 200.0L213.6 200.0L216.8 172.7L220.5 174.1L219.1 152.5L222.8 154.0L225.1 128.1L227.4 154.0L231.0 152.5L229.7 174.1L233.3 172.7L236.5 200.0L233.3 200.0L235.4 181.7L237.8 182.6L236.9 168.2L239.2 169.1L240.7 151.8L242.2 169.1L244.6 168.2L243.7 182.6L246.1 181.7L248.2 200.0L244.4 200.0L247.5 178.8L251.1 179.9L249.7 163.1L253.3 164.2L255.5 144.1L257.7 164.2L261.2 163.1L259.9 179.9L263.5 178.8L266.6 200.0L258.1 200.0L262.1 186.0L266.7 186.7L264.9 175.7L269.5 176.4L272.4 163.1L275.2 176.4L279.8 175.7L278.1 186.7L282.6 186.0L286.6 200.0L277.4 200.0L280.2 174.0L283.3 175.3L282.1 154.8L285.2 156.1L287.2 131.5L289.1 156.1L292.3 154.8L291.1 175.3L294.2 174.0L296.9 200.0L294.5 200.0L297.6 183.8L301.1 184.7L299.8 171.9L303.4 172.7L305.6 157.4L307.8 172.7L311.4 171.9L310.0 184.7L313.6 183.8L316.7 200.0L309.9 200.0L312.5 179.9L315.4 180.9L314.3 165.1L317.3 166.1L319.1 147.0L321.0 166.1L324.0 165.1L322.8 180.9L325.8 179.9L328.4 200.0L322.8 200.0L325.5 176.6L328.6 177.8L327.4 159.3L330.5 160.5L332.5 138.4L334.4 160.5L337.5 159.3L336.3 177.8L339.4 176.6L342.1 200.0L337.6 200.0L340.1 169.2L342.9 170.8L341.8 146.4L344.7 148.1L346.5 118.9L348.2 148.1L351.1 146.4L350.0 170.8L352.8 169.2L355.3 200.0L350.2 200.0L354.1 174.5L358.5 175.9L356.9 155.8L361.3 157.1L364.1 133.0L366.9 157.1L371.3 155.8L369.6 175.9L374.1 174.5L378.0 200.0L371.7 200.0L374.8 177.1L378.3 178.3L377.0 160.2L380.6 161.4L382.8 139.7L385.0 161.4L388.6 160.2L387.2 178.3L390.8 177.1L393.9 200.0L389.3 200.0L393.3 179.2L398.0 180.3L396.2 163.9L400.9 165.0L403.8 145.4L406.7 165.0L411.3 163.9L409.6 180.3L414.2 179.2L418.3 200.0L400 220Z"/>
+        <mask id="home-moon">
+          <rect width="400" height="220" fill="#fff"/>
+          <circle cx="314" cy="52" r="27" fill="#000"/>
+        </mask>
+      </defs>
+      <rect width="400" height="220" fill="url(#home-sky)"/>
+      <g fill="#f4e4c1">
+        <circle cx="40" cy="30" r="1.2"/>
+        <circle cx="118" cy="14" r="0.9"/>
+        <circle cx="176" cy="48" r="1.1"/>
+        <circle cx="236" cy="22" r="0.8"/>
+        <circle cx="366" cy="104" r="1"/>
+        <circle cx="76" cy="84" r="0.8"/>
+      </g>
+      <circle cx="300" cy="64" r="62" fill="url(#home-glow)"/>
+      <circle cx="300" cy="64" r="30" fill="#f4e4c1" mask="url(#home-moon)"/>
+      <g fill="none" stroke="#ff7a1a" stroke-width="2.6" stroke-linecap="round">
+        <circle cx="300" cy="64" r="40"/>
+        <path d="M300 14v16M300 98v16M250 64h16M334 64h16"/>
+      </g>
+      <circle cx="300" cy="64" r="2.6" fill="#ff7a1a"/>
+      <use href="#trees" fill="#170f21" transform="translate(-24 -26) scale(1.08 1)"/>
+      <g transform="translate(150 150)" fill="#8ff0c4">
+        <path d="M9 0C4.4 0 1 3.4 1 8v11l2.6-1.8 2.6 1.8 2.8-1.8 2.8 1.8 2.6-1.8 2.6 1.8V8c0-4.6-3.4-8-8-8z"/>
+        <ellipse cx="6.3" cy="8.2" rx="1.4" ry="1.9" fill="#0b0910"/>
+        <ellipse cx="11.7" cy="8.2" rx="1.4" ry="1.9" fill="#0b0910"/>
+      </g>
+      <use href="#trees" fill="#0b0910"/>
+      <path d="M246 200v-22l15-13 15 13v22z" fill="#0b0910"/>
+      <rect x="257" y="183" width="7" height="8" fill="#ff7a1a"/>
+    </svg>
+
     <div class="hero">
-      <img src="/icons/icon-192.png" alt="" width="84" height="84">
-      <h1>Manhunt</h1>
-      <p>La chasse à l'homme grandeur nature</p>
+      <h1 class="wordmark">Manhunt</h1>
+      <p class="tagline">La chasse à l'homme, de nuit, dans ta ville.</p>
     </div>
 
-    <form id="home-form" class="card" autocomplete="off">
+    <form id="home-form" autocomplete="off">
       <label class="field">
-        <span>Votre pseudo</span>
-        <input id="name" maxlength="20" autocomplete="nickname" placeholder="Ex : Léa" required>
+        <span>Ton pseudo</span>
+        <input id="name" maxlength="20" autocomplete="nickname" placeholder="Léa" required>
       </label>
-      <button class="btn primary" type="submit" id="btn-create">Créer une partie</button>
-      <div class="or"><span>ou</span></div>
-      <label class="field">
-        <span>Code de la partie</span>
-        <input id="code" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="ABCD" class="code-input">
+      <button class="btn primary big" type="submit" id="btn-create">Créer une partie</button>
+      <label class="field join">
+        <span>Ou rejoins une partie avec son code</span>
+        <span class="join-row">
+          <input id="code" maxlength="4" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="ABCD" class="code-input">
+          <button class="btn" type="button" id="btn-join">Rejoindre</button>
+        </span>
       </label>
-      <button class="btn" type="button" id="btn-join">Rejoindre</button>
     </form>
 
-    <div id="ios-hint" class="card hint-card" hidden>
-      Sur iPhone : touchez <b>Partager</b> puis <b>Sur l'écran d'accueil</b> pour installer l'appli.
-    </div>
+    <p id="ios-hint" class="note" hidden>
+      Sur iPhone : touche <b>Partager</b> puis <b>Sur l'écran d'accueil</b> pour installer l'appli.
+    </p>
 
-    <details class="card rules">
-      <summary>Règles du jeu</summary>
-      <ul>
-        <li>Les joueurs sont répartis au hasard en <b>hiders</b> et <b>hunters</b> (moitié-moitié).</li>
-        <li>Les hiders partent se cacher : les hunters attendent la fin de l'<b>avance</b> (10 min par défaut).</li>
-        <li>Ensuite, la position de chaque hider est <b>pingée toutes les 5 minutes</b> : les hunters voient le dernier ping sur la carte.</li>
-        <li>Restez dans la zone de jeu. Un hider attrapé le signale dans l'appli.</li>
-        <li>La manche finit quand tous les hiders sont attrapés. Puis les rôles s'inversent.</li>
-      </ul>
+    <details class="rules">
+      <summary>Comment on joue</summary>
+      <ol>
+        <li>L'hôte choisit la zone, l'avance des hiders, la fréquence des pings et la durée de la chasse.</li>
+        <li>Les <b class="t-hider">hiders</b> filent se cacher. Les <b class="t-hunter">hunters</b> attendent la fin de l'avance.</li>
+        <li>À chaque ping, la position de chaque hider apparaît sur la carte des hunters.</li>
+        <li>Sortir de la zone, c'est risqué : au bout de 30 s dehors, ta position est révélée en direct.</li>
+        <li>Un hider attrapé le déclare dans l'appli, ou un hunter le marque.</li>
+        <li>Points : 10 par minute en fuite (+50 si tu tiens jusqu'au bout), 100 par capture (+50 si toute l'équipe adverse tombe).</li>
+        <li>Garde l'appli ouverte, écran allumé : un téléphone verrouillé n'envoie plus sa position.</li>
+      </ol>
     </details>
   </section>
 
   <!-- Salon -->
   <section id="lobby" class="screen scroll" hidden>
     <header class="bar">
-      <button class="icon-btn" id="btn-leave" aria-label="Quitter le salon">←</button>
-      <h2>Salon</h2>
-      <span class="chip ghost" id="round-label"></span>
+      <button class="icon-btn" id="btn-leave" aria-label="Quitter le salon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h1 class="bar-title" id="round-label"></h1>
+      <button class="icon-btn sound-btn" id="btn-sound" aria-label="Couper le son"></button>
     </header>
 
-    <div class="card codecard">
-      <div>
-        <small>Code de la partie</small>
-        <div class="code" id="lobby-code"></div>
+    <div class="codebar">
+      <div class="code" id="lobby-code" aria-label="Code de la partie"></div>
+      <button class="btn" id="btn-share">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6M12 3v12M7 8l5-5 5 5"/></svg>
+        Inviter
+      </button>
+    </div>
+    <p class="hint">Tes potes rejoignent avec ce code.</p>
+
+    <h2 class="section-label">Joueurs <span id="player-count"></span></h2>
+    <ul class="players" id="player-list"></ul>
+    <p class="hint" id="roles-hint"></p>
+
+    <div id="score-block" hidden>
+      <h2 class="section-label">Classement</h2>
+      <ol class="board" id="lobby-board"></ol>
+      <button class="btn ghost" id="btn-final">Finir la soirée et voir le podium</button>
+    </div>
+
+    <h2 class="section-label">Zone de jeu</h2>
+    <div class="city" id="city-name"></div>
+    <div id="host-search">
+      <form class="row" id="city-form">
+        <input id="city-q" type="search" placeholder="Rechercher une ville" autocomplete="off" enterkeyhint="search">
+        <button class="btn small" type="submit">Chercher</button>
+      </form>
+      <ul class="results" id="city-results"></ul>
+      <button class="btn small ghost pos-btn" type="button" id="btn-use-pos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        Centrer sur ma position
+      </button>
+    </div>
+    <div id="lobby-map" class="map-preview"></div>
+    <label class="range">
+      <span>Rayon <b id="radius-val"></b></span>
+      <input id="radius" type="range" min="0.2" max="25" step="0.1">
+    </label>
+    <p class="hint" id="map-hint">Touche la carte pour déplacer le centre.</p>
+
+    <h2 class="section-label">Équipes</h2>
+    <div class="setting col">
+      <span>Répartition des rôles</span>
+      <div class="seg" data-key="roleMode">
+        <button type="button" data-v="swap">Inversés</button>
+        <button type="button" data-v="random">Au hasard</button>
+        <button type="button" data-v="manual">À la main</button>
       </div>
-      <button class="btn small" id="btn-share">Inviter</button>
+      <p class="hint" id="mode-hint"></p>
     </div>
-
-    <div class="card">
-      <h3>Joueurs <span class="muted" id="player-count"></span></h3>
-      <ul class="players" id="player-list"></ul>
-      <p class="hint" id="roles-hint"></p>
-    </div>
-
-    <div class="card">
-      <h3>Zone de jeu</h3>
-      <div class="city" id="city-name"></div>
-      <div id="host-search">
-        <form class="row" id="city-form">
-          <input id="city-q" type="search" placeholder="Rechercher une ville" autocomplete="off" enterkeyhint="search">
-          <button class="btn small" type="submit">Chercher</button>
-        </form>
-        <ul class="results" id="city-results"></ul>
-        <button class="btn small ghost" type="button" id="btn-use-pos">📍 Utiliser ma position</button>
+    <div class="setting col">
+      <span>Nombre de hunters</span>
+      <div class="seg" data-key="hunterCount" data-num>
+        <button type="button" data-v="0">Moitié</button>
+        <button type="button" data-v="1">1</button>
+        <button type="button" data-v="2">2</button>
+        <button type="button" data-v="3">3</button>
       </div>
-      <div id="lobby-map" class="map-preview"></div>
-      <label class="range">
-        <span>Rayon de la zone <b id="radius-val"></b></span>
-        <input id="radius" type="range" min="0.2" max="25" step="0.1">
-      </label>
-      <p class="hint" id="map-hint">Touchez la carte pour déplacer le centre de la zone.</p>
     </div>
 
-    <div class="card">
-      <h3>Règles de la manche</h3>
-      <label class="field inline">
-        <span>Avance des hiders</span>
-        <select id="set-head">
-          <option value="0">Aucune</option>
-          <option value="5">5 min</option>
-          <option value="10">10 min</option>
-          <option value="15">15 min</option>
-          <option value="20">20 min</option>
-          <option value="30">30 min</option>
-        </select>
-      </label>
-      <label class="field inline">
-        <span>Ping de position toutes les</span>
-        <select id="set-ping">
-          <option value="1">1 min</option>
-          <option value="2">2 min</option>
-          <option value="3">3 min</option>
-          <option value="5">5 min</option>
-          <option value="10">10 min</option>
-          <option value="15">15 min</option>
-        </select>
-      </label>
-      <label class="field inline">
-        <span>Durée de la chasse (après l'avance)</span>
-        <select id="set-duration">
-          <option value="15">15 min</option>
-          <option value="30">30 min</option>
-          <option value="45">45 min</option>
-          <option value="60">1 h</option>
-          <option value="90">1 h 30</option>
-          <option value="120">2 h</option>
-          <option value="180">3 h</option>
-          <option value="0">Illimitée</option>
-        </select>
-      </label>
-      <label class="field inline">
-        <span>Hider attrapé</span>
-        <select id="set-caught">
-          <option value="cross">Croix sur la carte</option>
-          <option value="none">Disparaît</option>
-        </select>
-      </label>
-      <label class="switch">
-        <input type="checkbox" id="set-see">
-        <span class="track"></span>
-        <span class="label">Les hiders voient les derniers pings des autres hiders</span>
-      </label>
+    <h2 class="section-label">Règles de la manche</h2>
+    <label class="setting">
+      <span>Avance des hiders</span>
+      <select id="set-head">
+        <option value="0">Aucune</option>
+        <option value="5">5 min</option>
+        <option value="10">10 min</option>
+        <option value="15">15 min</option>
+        <option value="20">20 min</option>
+        <option value="30">30 min</option>
+      </select>
+    </label>
+    <label class="setting">
+      <span>Ping toutes les</span>
+      <select id="set-ping">
+        <option value="1">1 min</option>
+        <option value="2">2 min</option>
+        <option value="3">3 min</option>
+        <option value="5">5 min</option>
+        <option value="10">10 min</option>
+        <option value="15">15 min</option>
+      </select>
+    </label>
+    <label class="setting">
+      <span>Durée de la chasse</span>
+      <select id="set-duration">
+        <option value="15">15 min</option>
+        <option value="30">30 min</option>
+        <option value="45">45 min</option>
+        <option value="60">1 h</option>
+        <option value="90">1 h 30</option>
+        <option value="120">2 h</option>
+        <option value="180">3 h</option>
+        <option value="0">Illimitée</option>
+      </select>
+    </label>
+    <label class="setting">
+      <span>Hors zone</span>
+      <select id="set-out">
+        <option value="30">Révélé après 30 s</option>
+        <option value="60">Révélé après 1 min</option>
+        <option value="0">Simple alerte</option>
+      </select>
+    </label>
+    <div class="setting col">
+      <span>Quand un hider est attrapé</span>
+      <div class="seg" data-key="caughtDisplay">
+        <button type="button" data-v="cross">Une tombe sur la carte</button>
+        <button type="button" data-v="none">Il disparaît</button>
+      </div>
     </div>
+    <label class="setting switch">
+      <span class="label">Les hiders voient les pings de leurs alliés</span>
+      <input type="checkbox" id="set-see">
+      <span class="track"></span>
+    </label>
 
-    <div class="card" id="geo-card">
-      <h3>Localisation</h3>
-      <p class="hint" id="geo-status"></p>
+    <div class="geo-card" id="geo-card">
+      <p id="geo-status"></p>
       <button class="btn small" id="btn-geo">Activer la localisation</button>
     </div>
 
     <footer class="dock">
-      <button class="btn primary big" id="btn-start">Lancer la partie</button>
+      <button class="btn primary big" id="btn-start">Lancer la chasse</button>
       <p class="hint center" id="start-hint"></p>
     </footer>
   </section>
@@ -162,47 +243,118 @@
   <section id="game" class="screen" hidden>
     <div id="game-map"></div>
 
-    <div class="hud top">
-      <div class="chips">
-        <span class="chip" id="role-chip"></span>
-        <span class="chip ghost" id="round-chip"></span>
+    <div class="top-stack">
+      <div class="hud" id="hud">
+        <div class="hud-row">
+          <span class="tag" id="role-chip"></span>
+          <span class="hud-round" id="round-chip"></span>
+        </div>
+        <div class="hud-title" id="phase-title"></div>
+        <div class="hud-time" id="phase-time"></div>
+        <div class="hud-sub" id="phase-sub"></div>
       </div>
-      <div class="hud-title" id="phase-title"></div>
-      <div class="hud-time" id="phase-time"></div>
-      <div class="hud-sub" id="phase-sub"></div>
+      <div class="warn" id="warn" hidden>
+        <div class="warn-ring">
+          <svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19"/><circle class="arc" id="warn-arc" cx="22" cy="22" r="19"/></svg>
+          <b id="warn-count"></b>
+        </div>
+        <div class="warn-text">
+          <strong id="warn-title"></strong>
+          <span id="warn-msg"></span>
+        </div>
+      </div>
     </div>
 
-    <div class="warn" id="warn" hidden></div>
-
     <div class="fabs">
-      <button class="fab" id="btn-me" aria-label="Centrer sur ma position">◎</button>
-      <button class="fab" id="btn-zone" aria-label="Voir toute la zone">⛶</button>
+      <button class="fab sound-btn" id="btn-sound-game" aria-label="Couper le son"></button>
+      <button class="fab" id="btn-me" aria-label="Centrer sur ma position">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </button>
+      <button class="fab" id="btn-zone" aria-label="Voir toute la zone">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
     </div>
 
     <div class="sheet collapsed" id="sheet">
-      <button class="handle" id="sheet-handle" aria-label="Afficher les joueurs"><span></span></button>
-      <div class="sheet-body">
-        <div class="sheet-summary" id="sheet-summary"></div>
-        <ul class="players" id="game-players"></ul>
-        <button class="btn danger" id="btn-caught">Je me suis fait attraper</button>
-        <button class="btn ghost" id="btn-end">Terminer la partie</button>
-        <button class="btn ghost" id="btn-leave-game">Quitter la partie</button>
+      <button class="handle" id="sheet-handle" aria-label="Afficher les joueurs et le chat">
+        <span class="grip"></span>
+        <span class="sheet-summary" id="sheet-summary"></span>
+      </button>
+      <div class="tabs">
+        <button type="button" data-tab="players" class="on">Joueurs</button>
+        <button type="button" data-tab="chat">Chat <i class="badge" id="chat-badge" hidden></i></button>
+      </div>
+      <div class="sheet-body" id="sheet-body">
+        <div id="tab-players">
+          <ul class="players" id="game-players"></ul>
+          <div class="stack">
+            <button class="btn danger" id="btn-caught">Je me suis fait attraper</button>
+            <button class="btn" id="btn-end">Terminer la manche</button>
+            <button class="btn ghost" id="btn-leave-game">Quitter la partie</button>
+          </div>
+        </div>
+        <div id="tab-chat" hidden>
+          <ul class="chat" id="chat-list"></ul>
+          <div class="quick" id="quick"></div>
+          <form class="composer" id="chat-form" autocomplete="off">
+            <button type="button" class="ch" id="chat-ch"></button>
+            <input id="chat-input" maxlength="200" placeholder="Message…" enterkeyhint="send">
+            <button class="send" type="submit" aria-label="Envoyer">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
 
     <div class="overlay" id="result" hidden>
-      <div class="card result-card">
-        <div class="result-emoji" id="result-emoji"></div>
-        <h2 id="result-title"></h2>
-        <p class="muted" id="result-sub"></p>
-        <ol class="ranking" id="result-list"></ol>
-        <button class="btn primary" id="btn-next">Manche suivante · rôles inversés</button>
-        <p class="hint center" id="next-hint"></p>
-        <button class="btn ghost" id="btn-map">Voir la carte</button>
-        <button class="btn ghost" id="btn-quit">Quitter</button>
+      <div class="result-card">
+        <div class="result-icon" id="result-icon"></div>
+        <h2 class="result-title" id="result-title"></h2>
+        <p class="result-sub" id="result-sub"></p>
+        <h3 class="section-label">Cette manche</h3>
+        <ul class="round-list" id="result-list"></ul>
+        <h3 class="section-label">Classement</h3>
+        <ol class="board" id="result-board"></ol>
+        <div class="stack">
+          <button class="btn primary big" id="btn-next">Manche suivante</button>
+          <button class="btn" id="btn-to-final">Finir la soirée et voir le podium</button>
+          <p class="hint center" id="next-hint"></p>
+          <button class="btn ghost" id="btn-map">Voir la carte</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="splash" id="splash" hidden>
+      <div class="splash-ring"></div>
+      <div class="splash-inner">
+        <div class="splash-icon" id="splash-icon"></div>
+        <div class="splash-kicker" id="splash-kicker"></div>
+        <div class="splash-title" id="splash-title"></div>
+        <div class="splash-sub" id="splash-sub"></div>
       </div>
     </div>
   </section>
+
+  <!-- Podium final -->
+  <section id="final" class="screen scroll" hidden>
+    <h1 class="final-title">Classement final</h1>
+    <div class="podium" id="podium"></div>
+    <ol class="board" id="final-board"></ol>
+    <div class="stack final-actions">
+      <button class="btn primary big" id="btn-reset">Nouvelle partie</button>
+      <p class="hint center" id="final-hint"></p>
+      <button class="btn ghost" id="btn-final-quit">Quitter</button>
+    </div>
+  </section>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h3 id="modal-title"></h3>
+      <p id="modal-text"></p>
+      <div class="stack" id="modal-actions"></div>
+    </div>
+  </div>
 
   <div id="toast" role="status" aria-live="polite"></div>
 
